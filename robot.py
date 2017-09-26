@@ -21,6 +21,7 @@ class Robot(object):
         self.run = 0
 
     def reset(self):
+        # Reseta a posicao e angulo interno do robo
         self.x = 0
         self.y = 0
         self.angle = 0
@@ -28,9 +29,7 @@ class Robot(object):
         return
 
     def hit_goal(self, sensors):
-        # Checa se o micromouse esta na chegada.
-        # TO-DO: Caso esteja na primeira corrida, volta ao inicio, ajusta
-        # valores
+        # Checa se o micromouse esta na chegada
         if self.x == self.goal[0] and self.y == self.goal[1]:
             return True
         return False
@@ -44,9 +43,6 @@ class Robot(object):
     def heuristic(self, x, y):
         # Utiliza Manhattan distance para encontrar custo
         return abs(x - self.goal[0]) + abs(y - self.goal[1])
-
-    def showHeading(self):
-        return self.heading
 
     def updateMap(self, sensors):
         # Atualiza a matriz de mapa.
@@ -181,9 +177,8 @@ class Robot(object):
                 
                 self.dist[mim[1]][mim[0]] = min(newDist)
 
-    def steer(self, best):
-        # Define quantos graus e a direcao do mouse
-        new_angle = best
+    def steer(self, new_angle):
+        # Define quantos graus e a direcao do mouse        
         mod = 1
         # Para casos sem rotacao:
         if self.angle == new_angle:
@@ -193,15 +188,13 @@ class Robot(object):
         if self.angle >= 180:
             mod = -1
         # Casos para mouse indo para o norte ou sul
-
         if self.angle == 0 or self.angle == 180:
             if new_angle == 90:
                 return 90 * mod
             if new_angle == 270:
                 return -90 * mod
 
-        # Casos para mouse indo oeste e lest
-
+        # Casos para mouse indo oeste e leste
         if self.angle == 90 or self.angle == 270:
             if new_angle == 180:
                 return 90 * mod
@@ -242,24 +235,12 @@ class Robot(object):
         # come back to the start and try to find a better route. When the start
         # is found, end the search run.
 
-        if self.hit_goal(sensors):
-           
-           #     self.goal = [0,0]
+        if self.hit_goal(sensors):   
                 self.run +=1
                 self.reset()
                 return ('Reset', 'Reset')        
          
-           # elif self.run == 1:
-           #     self.goal = [(self.maze_dim / 2) - 1, self.maze_dim / 2]
-           #      self.x = 0
-           #      self.y = 0
-           #      self.run +=1
-           #      return ('Reset', 'Reset')
-           #  else:                
-           #      self.x = 0
-           #      self.y = 0
-           #      return ('Reset', 'Reset')
-
+  
         # Atualiza o mapa com base nas informacoes dos sensores
         if self.run < 2:
             self.updateMap(sensors)
@@ -279,14 +260,12 @@ class Robot(object):
 
         # A partir da informacao do melhor movimento possivel,
         # calcula como sera feita a movimentacao
-
         rotation = self.steer(best)
         go = self.acc(rotation)
         move = self.convertAngle(best)        
         move = [go * d for d in move]        
         self.x = self.x + move[0]
-        self.y = self.y + move[1]
-      
+        self.y = self.y + move[1]      
         self.angle = (self.angle + rotation) % 360
         self.heading = self.compass(self.angle)
         return rotation, go
