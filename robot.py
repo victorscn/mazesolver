@@ -1,6 +1,11 @@
+import math
+import random
+import sys
 class Robot(object):
 
     def __init__(self, maze_dim):
+
+        sys.setrecursionlimit(1700)
         '''
         Use the initialization function to set up attributes that your robot
         will use to learn and navigate the maze. Some initial attributes are
@@ -18,7 +23,9 @@ class Robot(object):
                      for row in range(maze_dim)]
         self.dist = [[0 for col in range(maze_dim)] for row in range(maze_dim)]
         self.initializeDistMaze()
-        self.run = 0
+        self.run = 0        
+        self.step =1
+        self.epsilon = math.exp(-0.01*self.step) 
 
     def reset(self):
         # Reseta a posicao e angulo interno do robo
@@ -54,7 +61,8 @@ class Robot(object):
         for i in range(len(sensors)):
             # Calcular direcao do sensor
             direction = (self.angle + way[i]) % 360
-            distance = [sensors[i] * d for d in self.convertAngle(direction)]                        
+            distance = [sensors[i] * d for d in self.convertAngle(direction)]
+
             self.grid[self.y + distance[1]][self.x +
                                             distance[0]][self.gridConvert(direction)] = 0
 
@@ -102,26 +110,41 @@ class Robot(object):
         elif move == 270:  # Left
             return 3
 
-    def checkMoves(self):
-        # Checa movimentos possiveis
+    def checkMoves(self, sensors):
+        # Checa movimentos. Devolve angulos e distancias possiveis
         moves = []
         possible = []
         way = [-90, 0, 90]
 
         for i in range(len(way)):
-            possible. append((self.angle + way[i]) % 360)
+            for d in range(1,4):
+                if d <= sensors[i]: #TO-DO corrigir distancia
+                    possible. append([(self.angle + way[i]) % 360,d])
+
         for move in possible:
-            if self.grid[self.y][self.x][self.gridConvert(move)] == 1:
-                moves.append(move)
+            if self.grid[self.y][self.x][self.gridConvert(move[0])] == 1:
+                if move[1] == 1 :
+                    moves.append(move)
+                elif move[1] == 2:
+                    nxny = self.convertAngle(move[0])
+                    if self.grid[self.y + nxny[1]][self.x +
+                    nxny[0]][self.gridConvert(move[0])] == 1:
+                        moves.append(move)
+                elif move[1] == 3:
+                    nxny = self.convertAngle(move[0])
+                    if self.grid[self.y + nxny[1]*2][self.x +
+                    nxny[0] * 2][self.gridConvert(move[0])] == 1:
+                        moves.append(move)
+        
         return moves
 
     def checkBest(self, moves):
-        # A partir de lista, escolhe o movimento com menor valor
+        # Recebe lista de movimentos possiveis e escolhe o menor valor de distancia
         # na matriz dist
         best = []
         dist_value = self.dist[self.y][self.x]        
         for move in moves:
-            nxny = self.convertAngle(move)
+            nxny = [move[1] * d for d in self.convertAngle(move[0])]
             if self.dist[self.y + nxny[1]][self.x + nxny[0]] < dist_value:
                 if self.run < 2 or self.grid[self.y + nxny[1]][self.x + nxny[0]][4] ==1:                
                     dist_value = self.dist[self.y + nxny[1]][self.x + nxny[0]]
@@ -132,7 +155,7 @@ class Robot(object):
             nxny = self.convertAngle(back)
             if self.grid[self.y][self.x][self.gridConvert(back)] == 1:
                 if self.dist[self.y + nxny[1]][self.x + nxny[0]] < dist_value:
-                    best = (self.angle+90)%360   
+                    best = [self.angle,-1]   
 
         # Caso nao encontrar um bom movimento, atualiza valores
         if best == []:
@@ -209,6 +232,14 @@ class Robot(object):
         else:
             return 0
 
+    def not_visited(self,move):
+        check = self.convertAngle((move[0])%360)        
+        check = [move[1] * d for d in check]        
+        if self.grid[self.y + check[1]][self.x + check[0]][4] ==0:
+            return True
+        else:
+            return False
+               
     def next_move(self, sensors):
         go = 1
         '''
@@ -238,37 +269,51 @@ class Robot(object):
         if self.hit_goal(sensors):   
                 self.run +=1
                 self.reset()
-                return ('Reset', 'Reset')        
-         
-  
-        # Atualiza o mapa com base nas informacoes dos sensores
-        if self.run < 2:
-            self.updateMap(sensors)
+                return ('Reset', 'Reset')            
+        
 
-        # Checa se esta sem saida. Caso verdadeiro, vira a direita
-        if sensors == [0, 0, 0]:
-            self.angle += 90
-            self.angle = self.angle % 360
-            self.heading = self.compass(self.angle)
-            return 90, 0
+        self.updateMap(sensors)
+
+        
 
         # Escolha do proximo movimento
         # Inicia checando movimentos possiveis a partir da posicao e
         # procura pelo melhor valor
-        possible_moves = self.checkMoves()        
+        possible_moves = self.checkMoves(sensors) 
+#        if self.run == 0:
+#            self.step+=1.0   
+#            self.epsilon = math.exp(-0.01*self.step)
+#            if self.epsilon < random.random():
+#                best = self.checkBest(possible_moves)
+#            else:
+#                if possible_moves == []:
+#                    possible_moves.append([self.angle,-1])
+#                a = False                
+#                while not a:
+#                    random.shuffle(possible_moves)
+#                    move = possible_moves.pop()
+#                    a = self.not_visited(move)
+#                    if possible_moves == []:
+#                        best = move
+#                        break
+#                    else:
+#                        best = move
+#                
+#        else:
         best = self.checkBest(possible_moves)
 
+               
         # A partir da informacao do melhor movimento possivel,
         # calcula como sera feita a movimentacao
-        rotation = self.steer(best)
-        go = self.acc(rotation)
-        move = self.convertAngle(best)        
-        move = [go * d for d in move]        
+        best[0] = self.steer(best[0])        
+#        go = self.acc(rotation) * best[1]
+        move = self.convertAngle((self.angle+best[0])%360)        
+        move = [best[1] * d for d in move]        
         self.x = self.x + move[0]
         self.y = self.y + move[1]      
-        self.angle = (self.angle + rotation) % 360
+        self.angle = (self.angle + best[0]) % 360
         self.heading = self.compass(self.angle)
-        return rotation, go
+        return best[0], best[1]
 
 # Debugging Functions
     def showDist(self):
