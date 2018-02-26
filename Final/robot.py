@@ -370,6 +370,8 @@ class Robot(object):
         # Define acoes caso o robo tenha atingido o objetivo
         if self.hitGoal(sensors):
 
+        	# Se o modo for de busca estendida, o algoritmo inverte a matriz de distancia
+        	# para continuar a busca. Caso contrário, reseta os valores e inicia nova corrida 
             if self.mode == 3:
                 self.run +=1
                 self.dist = self.flip(self.dist, self.run, self.dist[self.start[0]][self.start[1]])

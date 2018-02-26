@@ -11,7 +11,8 @@ if __name__ == '__main__':
 
     # Create a maze based on input argument on command line.
     testmaze = Maze( str(sys.argv[1]) )
-
+    # Open tester result
+    f = open('tester.txt','rb')
 
     # Intialize the window and drawing turtle.
     window = turtle.Screen()
@@ -19,6 +20,12 @@ if __name__ == '__main__':
     wally.speed(0)
     wally.hideturtle()
     wally.penup()
+
+    #Initializing maze solver turtle
+    mouse = turtle.Turtle()
+    mouse.speed(0)
+    mouse.penup()
+    mouse.color('red') 
 
     # maze centered on (0,0), squares are 20 units in length.
     sq_size = 20
@@ -57,5 +64,21 @@ if __name__ == '__main__':
                 wally.forward(sq_size)
                 wally.penup()
 
+       
+
+    moves = f.read()
+    runs = moves.split('\n')
+
+    for r in range(len(runs)):
+        mouse.goto(origin + 10, origin + 10)
+        mouse.pendown()
+        runs[r] = runs[r].split('.')        
+        runs[r].pop()
+        if r!=0:
+            mouse.color('green')
+        runs[r] = [ast.literal_eval(d) for d in runs[r]]
+        for k in range(len(runs[r])):
+            mouse.goto(origin+ 10 + sq_size * runs[r][k][0], origin+10+sq_size * runs[r][k][1] )
+        mouse.penup()
 
     window.exitonclick()

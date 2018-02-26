@@ -1,43 +1,36 @@
 import math
 import random
+import pdb
 
 class Robot(object):
 
     def __init__(self, maze_dim, mode):
-    #INPUT: maze_dim - dimensao do labirinto
-    #       mode - modo escolhido de exploracao      
-
+        
+        '''
+        Use the initialization function to set up attributes that your robot
+        will use to learn and navigate the maze. Some initial attributes are
+        provided based on common information, including the size of the maze
+        the robot is placed in.
+        '''
         self.mode = mode
-
-        # As variaveis x, y, heading e angle definem posicao e angulo do robo
         self.x = 0
         self.y = 0
         self.heading = 'up'
-        self.angle = 0       
+        self.angle = 0
         self.maze_dim = maze_dim
-
-        # As variaveis grid e dist armazenam informacoes do labirinto        
+        # TO-DO grid: Estado [up,right,down,left,]. Necessario atualizar checkmap
         self.grid = [[[1, 1, 1, 1,0] for col in range(maze_dim)]
                      for row in range(maze_dim)]
         self.dist = [[0 for col in range(maze_dim)] for row in range(maze_dim)]
         self.initializeDistMaze()
-
-        # self.run
         self.run = 0
-        # self.start 
         self.start = [0,0]
-
-        # No modo aleatorio, as variaveis necessarias para o funcionamento sao
-        # inicializadas a seguir
         if self.mode ==1:
             self.step = 1
-            # self.coef define o coeficiente de aleatoriedade
-            self.coef = 0.01
-            self.epsilon = math.exp(-self.coef*self.step)
-
+            self.epsilon = math.exp(-0.01*self.step) 
 
     def reset(self):
-    #Reseta a posicao e angulo interno do robo
+        # Reseta a posicao e angulo interno do robo
         self.x = 0
         self.y = 0
         self.angle = 0
@@ -45,23 +38,19 @@ class Robot(object):
         return
 
     def hitGoal(self, sensors):
-    # Checa se o micromouse esta no destino
-    # INPUT: sensors - informacao dos sensores
-        
+        # Checa se o micromouse esta na chegada
         if self.dist[self.y][self.x]==0 :
             return True
         return False
 
     def initializeDistMaze(self):
-    # Inicializa a matriz de valores com a funcao heuristica escolhida
+        # Inicializa a matriz de valores com a funcao heuristica escolhida
         for y in range(self.maze_dim):
             for x in range(self.maze_dim):
                 self.dist[y][x] = self.heuristic(x, y)
 
     def heuristic(self, x, y):
-    # Utiliza Manhattan distance para encontrar custo
-    # INPUT: x e y - posicao no grid
-    # OUTPUT: valor de distancia entre x,y e destino
+        # Utiliza Manhattan distance para encontrar custo
         if x < self.maze_dim/2 and y < self.maze_dim/2:
             return abs(x - (self.maze_dim/2 - 1)) + abs(y - (self.maze_dim/2 - 1))
         elif x >= self.maze_dim/2 and y < self.maze_dim/2:
@@ -72,24 +61,19 @@ class Robot(object):
             return abs(x - self.maze_dim/2) + abs(y - self.maze_dim/2)
 
     def updateMap(self, sensors):
-    # Atualiza a matriz de mapa.
-    # INPUT: sensors - informacao dos sensores
-
-    # Define a localizacao do centro baseado no modo e corrida
+        # Atualiza a matriz de mapa.
+        #Input: informacao dos sensores
         if self.mode == 3 and self.run == 1:
             center = [[0,0]]
         else:
             center = [[self.maze_dim/2, self.maze_dim/2], [self.maze_dim/2 - 1, self.maze_dim/2 - 1], \
                     [self.maze_dim/2 -1, self.maze_dim/2],[self.maze_dim/2, self.maze_dim/2 - 1]]
-
-    # Armazena posicoes modificadas para atualizacao dos valores de distancia em modified
         modified=[]
         way = [-90, 0, 90]
         modified.append([self.x,self.y])
         b=[]
-
-    # Reconhece lado que sensores estao detectando (norte, leste, sul, oeste)
-    # "Fecha" celula
+        # 1. Reconhecer lado que sensores estao detectando (norte, leste, sul, oeste)
+        # 2. Marcar celula correta
         self.grid[self.y][self.x][4] = 1
         for i in range(len(sensors)):
             # Calcular direcao do sensor
@@ -97,25 +81,23 @@ class Robot(object):
             distance = [sensors[i] * d for d in self.convertAngle(direction)]
             # Atualiza parede detectada
             self.grid[self.y + distance[1]][self.x +
-                                            distance[0]][self.gridConvert(direction)] = 0 
+                                            distance[0]][self.gridConvert(direction)] = 0           
+            # Atualiza grid na celula adjacente
 
             # Checa e atualiza paredes em celulas adjacentes e, caso exista modificacoes,
             # atualiza valores de distancia
+            
+
             a = self.adjacent(direction, self.x, self.y, sensors[i])
             if a:
                 if a not in center:
                     b.append(a)            
    
         modified = modified + b
-        #Atualiza valores de distancia
         for mod in modified:
                self.updateDist(mod[0],mod[1])
 
     def compass(self, angle):
-    # Transforma valores de angulo em informacao de posicao 
-    # INPUT: angle - angulo entre 0 e 270
-    # OUTPUT: posicao
-        
         if angle == 0:
             return 'up'
         elif angle == 90:
@@ -126,10 +108,6 @@ class Robot(object):
             return 'left'
 
     def convertAngle(self, angle):
-    # Transforma valores de angulo em informacoes x,y
-    # INPUT: angle - angulo entre 0 e 270
-    # OUTPUT: movimento [x,y] no angulo
-        
         if angle == 0:  # Up
             return [0, 1]
         elif angle == 90:  # Right
@@ -142,10 +120,6 @@ class Robot(object):
             return [0, 0]
 
     def convertMove(self, move):
-    # Transforma valores de movimentacao em angulo
-    # INPUT: move - [x,y]
-    # OUTPUT: angulo
-         
         if move == [0, 1]:  # UP
             return 0
         elif move == [1, 0]:  # Right
@@ -157,28 +131,21 @@ class Robot(object):
         else:
             return 'Not a move'
 
-    def gridConvert(self, angle):
-    # Transforma valores de angulo em posicao na lista grid 
-    # INPUT: angle - angulo inteiro entre 0 e 270
-    # OUTPUT: posicao na lista grid
-
-        if angle == 0:  # Up
+    def gridConvert(self, move):
+        if move == 0:  # Up
             return 0
-        elif angle == 90:  # Right
+        elif move == 90:  # Right
             return 1
-        elif angle == 180:  # Down
+        elif move == 180:  # Down
             return 2
-        elif angle == 270:  # Left
+        elif move == 270:  # Left
             return 3
 
-    #Funcao para o metodo modificado
-    def flip(self, dm, run, start_value):
-    #Flip troca valores para as rodadas de explocacao e fast run
-    # INPUT: dm - Matriz de distancia
-    #        run - numero da corrida
-    #        start_value - valor de distancia na celula de inicio da rodada
-    # OUTPUT: Matriz de distancia para o novo
-       
+#Funcoes para o metodo modificado
+#Flip troca valores para as rodadas de explocacao e fast run
+#Goal value e' uma funcao auxiliar para unflip, encontra o valor correto para o centro
+#This function flip the distance matrix to the robot go back to the start
+    def flip(self, dm, run, start_value):        
         distance = list(dm)           
         result = [[0 for col in range(self.maze_dim)] for row in range(self.maze_dim)]        
 
@@ -200,19 +167,14 @@ class Robot(object):
         return result
 
     def checkMoves(self, sensors):
-    # Checa movimentos possiveis na posicao atual do robo
-    # INPUT: sensors - tupla com informacao dos sensores
-    # OUTPUT: moves - lista com movimentos possiveis
-        
+        # Checa movimentos. Devolve angulos e distancias possiveis
         moves = []
-
-        #A variavel possible armazena movimentos possiveis
         possible = []
         way = [-90, 0, 90]
 
         for i in range(len(way)):
             for d in range(1,4):
-                if d <= sensors[i]:
+                if d <= sensors[i]: #TO-DO corrigir distancia
                     possible. append([(self.angle + way[i]) % 360,d])
 
         for move in possible:
@@ -233,11 +195,8 @@ class Robot(object):
         return moves
 
     def checkBest(self, moves):
-    # Recebe lista de movimentos possiveis e escolhe o menor valor de distancia
-    # na matriz dist
-    # INPUT: moves - lista com movimentos possiveis
-    # OUTPUT: best - lista com melhor movimento
-
+        # Recebe lista de movimentos possiveis e escolhe o menor valor de distancia
+        # na matriz dist
         best = []
         dist_value = self.dist[self.y][self.x]
         for move in moves:
@@ -261,19 +220,13 @@ class Robot(object):
         return best
 
     def exclusive(self, listed):
-    # Recebe lista e devolve lista com apenas valores exclusivos
-    # INPUT: listed - lista com valores
-    # OUTPUT: checked - lista com valores exclusivos
         checked = []
         for l in listed:
             if l not in checked:
                 checked.append(l)
         return checked
 
-    def updateDist(self, x, y):
-    # Atualiza valores na matriz de distancia
-    # INPUT: x,y - posicao a ser atualizada
-        
+    def updateDist(self, x, y):        
         stack = [[x, y]]
         ways = [[0,1], [1,0], [0,-1], [-1,0]]
         while stack != []:
@@ -303,10 +256,7 @@ class Robot(object):
                 self.dist[mim[1]][mim[0]] = min(newDist)
 
     def steer(self, new_angle):
-    # Define qual angulo e' necessario para o robo atingir new_angle
-    # INPUT: new angle - angulo destino
-    # OUTPUT: rotacao necessaria
-
+        # Define quantos graus e a direcao do mouse 
         mod = 1
         # Para casos sem rotacao:
         if self.angle == new_angle:
@@ -329,11 +279,15 @@ class Robot(object):
             if new_angle == 0:
                 return -90 * mod
 
+    def acc(self, rotation):
+        new_angle = (self.angle+rotation)%360
+        # Define a quantidade de passos que o mouse andara
+        if self.grid[self.y][self.x][self.gridConvert(new_angle)] == 1:
+            return 1
+        else:
+            return 0
 
     def notVisited(self,move):
-    # Informa se posicao apos movimentacao do robo foi visitada anteriormente
-    # INPUT: move - movimento do robo
-    
         check = self.convertAngle((move[0])%360)
         check = [move[1] * d for d in check]
         if self.grid[self.y + check[1]][self.x + check[0]][4] ==0:
@@ -363,11 +317,10 @@ class Robot(object):
         the maze) then returing the tuple ('Reset', 'Reset') will indicate to
         the tester to end the run and return the robot to the start.
         '''
-        # Na primeira corrida o robo explora o labirinto e constroi o mapa que
-        # sera utilizado na fast run.
-        # A maneira que o robo explorara o labirinto na primeira rodada e' definida pelo usuario
+        # First run: construct map using fill flood. When the goal is found, use A* to
+        # come back to the start and try to find a better route. When the start
+        # is found, end the search run.
 
-        # Define acoes caso o robo tenha atingido o objetivo
         if self.hitGoal(sensors):
 
             if self.mode == 3:
@@ -394,7 +347,7 @@ class Robot(object):
         if self.mode == 1: 
             if self.run == 0:
                 self.step+=1.0   
-                self.epsilon = math.exp(-self.coef*self.step)
+                self.epsilon = math.exp(-0.01*self.step)
                 if self.epsilon < random.random():
                     best = self.checkBest(possible_moves)
                 else:
@@ -412,8 +365,8 @@ class Robot(object):
                             best = move
             else:
                 best = self.checkBest(possible_moves)
-
-        #Modo Comum e busca estendida
+ ## TODO: Arrumar
+ #Modo Comum e busca estendida
         elif self.mode >= 2:
             best = self.checkBest(possible_moves)
 
@@ -421,23 +374,21 @@ class Robot(object):
         # A partir da informacao do melhor movimento possivel,
         # calcula como sera feita a movimentacao
         best[0] = self.steer(best[0])
+
+
         move = self.convertAngle((self.angle+best[0])%360)
         move = [best[1] * d for d in move]
-
-        # Atualizacao dos valores internos do robo
         self.x = self.x + move[0]
         self.y = self.y + move[1]
         self.angle = (self.angle + best[0]) % 360
         self.heading = self.compass(self.angle)
 
+
         return best[0], best[1]
 
+
     def adjacent(self, angle, x, y, sensor): 
-    # Atualiza grid de celulas adjacentes e devolve posicao de celula atualizada
-    # INPUT: angle - angulo do robo
-    #        x,y -  posicao
-    #        sensor - leitura do sensor
-    # OUTPUT: posicao da celula adjacente ou nulo, em caso dela nao existir
+    # Atualiza grid de celulas adjacentes
         pos = self.convertAngle(angle)        
         if y+(pos[1]*sensor)+pos[1] in range(self.maze_dim) and x+(pos[0]*sensor)+pos[0] in range(self.maze_dim):
             self.grid[y+(pos[1]*sensor)+pos[1]][x+(pos[0]*sensor)+pos[0]][(self.gridConvert(angle)+2)%4] = 0
@@ -445,9 +396,15 @@ class Robot(object):
         else:
             return None
 
+#Debugging Functions
+    def showDist(self):
+        for i in range(len(self.dist)):
+            print self.dist[i]
+
+    def showGridPosition(self, x, y):
+        return self.grid[y][x]
+
     def rateVisited(self):
-    # Verifica a taxa de exploracao do labirinto
-    # OUTPUT: rate - taxa de exploracao
         numCells = self.maze_dim* self.maze_dim
         visited = 0
         for y in range(self.maze_dim):
@@ -455,4 +412,4 @@ class Robot(object):
                 if self.grid[y][x][4] == 1:
                     visited = visited + 1
         rate = (float(visited)/float(numCells))*100        
-        return rate
+        return rate       

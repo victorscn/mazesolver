@@ -1,0 +1,12 @@
+Descrição de arquivos:
+
+README.txt - Instruções e requerimentos para o funcionamento do script.
+showmaze.py - Script de visualização do labirinto.
+showresult.py - Script de visualização da última solução calculada.
+test_maze_##.txt - Labirintos para teste do algoritmo.
+tester.py - Script necessário para testar as habilidades do robô na resolução de labirintos.
+tester.txt - Solução mais recente produzida pelo robô.
+maze.py - Script que contém funções para a construção de labirintos.
+Navegação Robótica por Flood-Fill num Labirinto Virtual - Relatório do projeto.
+
+
